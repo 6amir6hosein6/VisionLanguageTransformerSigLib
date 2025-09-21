@@ -103,7 +103,7 @@ class SiglipVisionTransformer(nn.Module):
 
         return last_hidden_state
 
-class SiglipMLP:
+class SiglipMLP(nn.Module):
 
     def __init__(self, config: SiglipVisionConfig):
         self.config = config
@@ -118,7 +118,7 @@ class SiglipMLP:
         return hidden_states
 
 
-class SiglipAttention:
+class SiglipAttention(nn.Module):
 
     def __init__(self, config: SiglipVisionConfig):
         self.config = config
@@ -159,7 +159,20 @@ class SiglipAttention:
 
         atten_out = torch.matmul(atten_weights, value_state)
 
-class SignlipEncoder:
+        if atten_out.size() != (batch_size, self.num_heads, seq_len, self.head_dim):
+            raise ValueError(
+                f"Attention out should be of size {(batch_size, self.num_heads, seq_len, self.head_dim)}"
+                f" {atten_out.size()}"
+            )
+        
+        atten_out = atten_out.transpose(1, 2).contiguous()
+        atten_out = atten_out.reshape(batch_size, seq_len, self.embed_dim)
+
+        atten_out = self.out_proj(atten_out)
+
+        return atten_out, atten_weights
+
+class SignlipEncoderLayer(nn.Module):
 
     def __init__(self, config: SiglipVisionConfig):
         super().__init__()
@@ -185,3 +198,22 @@ class SignlipEncoder:
         hidden_states = residual + hidden_states
 
         return hidden_states
+
+
+class SignlipEncoder(nn.Module):
+
+    def __init__(self, config: SiglipVisionConfig):
+        super().__init__()
+        self.config = config
+        self.layers = nn.ModuleList(
+            [SignlipEncoderLayer(config) for _ in range(config.num_hidden_layers)]
+        )
+
+    def forward(self, inputs_embeds: torch.Tensor) -> torch.Tensor:
+        
+        hidden_state = inputs_embeds
+
+        for encoder_layer in self.layers:
+            hidden_state = encoder_layer(hidden_state)
+
+        return hidden_state
