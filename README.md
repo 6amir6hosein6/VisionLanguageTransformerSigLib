@@ -18,7 +18,7 @@ This model takes an input image and generates descriptive text. It combines a co
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/username/vlm-image2text.git
+git clone git@github.com:6amir6hosein6/VisionLanguageTransformerPaligemma.git
 cd vlm-image2text
 ```
 2. Install dependencies:
